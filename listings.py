@@ -20,6 +20,7 @@ def fetch_current_listings(api_key, sticker):
                 response.raise_for_status()
                 for entry in response.json()['data']:
                     listings.append(entry)
+                print(f"Response entry count for {sticker} with float ranges {range[0]}-{range[1]}: {len(response.json()['data'])}")
         return listings
     except requests.exceptions.RequestException as e:
         print(f"Error fetching listings: {e}")
