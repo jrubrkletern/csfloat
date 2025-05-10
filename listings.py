@@ -5,16 +5,22 @@ import os
 
 titan = "%5B%7B\"i\":96%7D%5D"
 ibp = "%5B%7B\"i\":88%7D%5D"
+ranges = [[0,0.15],[0.15,0.20],[0.20,0.25],[0.25,0.30],[0.30,0.35],[0.35,0.40],[0.40,0.55],[0.55,1]]
 def fetch_current_listings(api_key, sticker):
     """Fetches the current listings from the CSFloat API."""
-    url = "https://csfloat.com/api/v1/listings?limit=10&stickers=" + sticker  # This endpoint might not require an API key, double check the docs
+    url = "https://csfloat.com/api/v1/listings?limit=50"  # This endpoint might not require an API key, double check the docs
     headers = {
         "Authorization": api_key,  # Include the API key in the headers
     }
+    listings = []
     try:
-        response = requests.get(url, headers=headers)
-        response.raise_for_status()
-        return response.json()
+        for range in ranges:
+                request=url+"&min_float=" + str(range[0]) + "&max_float=" + str(range[1]) + "&stickers=" + sticker
+                response = requests.get(request, headers=headers)
+                response.raise_for_status()
+                for entry in response.json()['data']:
+                    listings.append(entry)
+        return listings
     except requests.exceptions.RequestException as e:
         print(f"Error fetching listings: {e}")
         return None
@@ -26,10 +32,10 @@ def find_new_listings(previous_listings, current_listings, sticker_name):
         return new_listings_with_sticker
 
     previous_ids = set()
-    if previous_listings and 'data' in previous_listings:
-        previous_ids = {listing['id'] for listing in previous_listings['data']}
+    if previous_listings:
+        previous_ids = {listing['id'] for listing in previous_listings}
 
-    for listing in current_listings['data']:
+    for listing in current_listings:
         #has_sticker = any(sticker_name in sticker['name'] for sticker in listing['item']['stickers'])
         if listing['id'] not in previous_ids:
             new_listings_with_sticker.append(listing)
@@ -90,7 +96,8 @@ if __name__ == "__main__":
     previous_ibuypower_listings = ibp_data.get("ibuypower")
 
     current_listings_data_titan = fetch_current_listings(api_key, titan)  # Pass the API key
-    
+    new_titan_listings = None
+    new_ibuypower_listings = None
     if current_listings_data_titan:
         # Check for new Titan (Foil) listings
         new_titan_listings = find_new_listings(
